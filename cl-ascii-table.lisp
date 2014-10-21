@@ -35,15 +35,13 @@
                  :header header
                  :cols columns
                  :cols-count (length columns)
-                 :cols-widths
-                 (mapcar #'compute-col-width columns)))
+                 :cols-widths (mapcar #'compute-col-width columns)))
 
 ;; implementation
 (defmethod add-row ((table ascii-table) columns)
   (unless (= (length columns) (cols-count table))
     (error "Invalid number of columns in row."))
-  (setf (rows table)
-        (cons columns (rows table)))
+  (setf (rows table) (cons columns (rows table)))
   (setf (cols-widths table)
         (mapcar #'compute-col-width columns (cols-widths table)))
   (values))
@@ -53,8 +51,8 @@
   (values))
 
 (defmethod display ((table ascii-table) &optional (out *standard-output*))
-  ;(when (header table)
-  ;  (ascii-table-display-header table out))
+  (when (header table)
+    (display-header table out))
   (display-separator table out)
   (display-row table (cols table) out)
   (display-separator table out)
@@ -64,9 +62,22 @@
 
 (defmethod print-object ((obj ascii-table) out)
   (print-unreadable-object (obj out :type t)
-    (format out "HEADER:~a COLUMNS:~a" (header obj) (cols obj))))
+    (format out "HEADER:'~a' COLUMNS:~a" (header obj) (cols obj))))
 
 ;; display helpers
+(defun display-header (table out)
+  (let* ((header (header table))
+         (header-len (length header))
+         (widths (cols-widths table))
+         (count (cols-count table))
+         (len (1- (+ count (reduce #'+ widths))))
+         (content
+          (if (>= header-len len) header
+            (let ((left-margin (+ header-len (floor (/ (- len header-len) 2)))))
+              (string-pad header left-margin)))))
+    (format out ".~a.~%" (make-string len :initial-element #\-))
+    (format out "|~a|~%" (string-pad-right content len))))
+
 (defun display-separator (table out)
   (loop for len in (cols-widths table)
         do (format out "+~a" (make-string len :initial-element #\-)))
@@ -83,17 +94,21 @@
 
 (defun display-col (value len out)
   (if (numberp value)
-      (format out (format nil "|~~~a<~a~~> " (1- len) value))
-    (format out (format nil "| ~~~a@<~a~~>" (1- len) value))))
-             
+      (format out "|~a " (string-pad value (1- len)))
+    (format out "| ~a" (string-pad-right value (1- len)))))
 
 ;; utils                          
 (defun compute-col-width (col &optional (len 0))
   (max len (+ 2 (length (format nil "~a" col)))))
 
+(defun string-pad (text len)
+  (format nil (format nil "~~~a<~a~~>" len text)))
+
+(defun string-pad-right (text len)
+  (format nil (format nil "~~~a@<~a~~>" len text)))
 
 (defun test ()
-  (let ((table (make-table '("Name" "Age"))))
+  (let ((table (make-table '("Name  " "Age  ") :header "People")))
     (format t "TABLE : ~a~%~%" table)
     (add-row table '("Bob" 42))
     (add-row table '("Bill" 12))
