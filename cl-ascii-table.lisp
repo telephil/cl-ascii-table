@@ -1,67 +1,87 @@
 ;;;; cl-ascii-table.lisp
 
-(in-package #:cl-ascii-table)
+(in-package #:ascii-table)
 
 ;; model
 (defclass ascii-table ()
-  ((header      :initarg :header :reader atable-header)
-   (cols        :initarg :cols :accessor atable-cols)
-   (cols-count  :accessor atable-cols-count)
-   (cols-widths :accessor atable-cols-widths)
-   (rows        :accessor atable-rows :initform nil)))
+  ((header
+    :initarg :header
+    :reader header
+    :initform nil)
+   (cols
+    :initarg :cols
+    :accessor cols
+    :initform nil)
+   (cols-count
+    :initarg :cols-count
+    :accessor cols-count
+    :initform 0)
+   (cols-widths
+    :initarg :cols-widths
+    :accessor cols-widths
+    :initform nil)
+   (rows
+    :accessor rows
+    :initform nil)))
+
+;; interface
+(defgeneric add-row (ascii-table columns))
+(defgeneric add-separator (ascii-table))
+(defgeneric display (ascii-table &optional out))
+
+;; constructor
+(defun make-table (columns &key (header nil))
+  (make-instance 'ascii-table
+                 :header header
+                 :cols columns
+                 :cols-count (length columns)
+                 :cols-widths
+                 (mapcar #'compute-col-width columns)))
+
+;; implementation
+(defmethod add-row ((table ascii-table) columns)
+  (unless (= (length columns) (cols-count table))
+    (error "Invalid number of columns in row."))
+  (setf (rows table)
+        (cons columns (rows table)))
+  (setf (cols-widths table)
+        (mapcar #'compute-col-width columns (cols-widths table)))
+  (values))
+
+(defmethod add-separator ((table ascii-table))
+  (setf (rows table) (cons nil (rows table)))
+  (values))
+
+(defmethod display ((table ascii-table) &optional (out *standard-output*))
+  ;(when (header table)
+  ;  (ascii-table-display-header table out))
+  (display-separator table out)
+  (display-row table (cols table) out)
+  (display-separator table out)
+  (loop for row in (reverse (rows table)) do
+        (display-row table row out))
+  (display-separator table out))
 
 (defmethod print-object ((obj ascii-table) out)
   (print-unreadable-object (obj out :type t)
-    (with-slots (header cols cols-count cols-widths) obj
-      (format out "header:~a cols:~a cols-count:~a cols-widths:~a"
-              header cols cols-count cols-widths))))
+    (format out "HEADER:~a COLUMNS:~a" (header obj) (cols obj))))
 
-(defun make-ascii-table (header &rest columns)
-  (let ((table (make-instance 'ascii-table
-                              :header header
-                              :cols   columns)))
-    (setf (atable-cols-count table) (length columns))
-    (setf (atable-cols-widths table) (mapcar #'compute-col-width columns))
-    table))
-
-(defun ascii-table-add-row (table &rest columns)
-  (setf (atable-rows table)
-        (cons columns (atable-rows table)))
-  (setf (atable-cols-widths table)
-        (mapcar #'compute-col-width columns (atable-cols-widths table)))
-  t)
-
-(defun ascii-table-add-separator (table)
-  (setf (atable-rows table) (cons nil (atable-rows table)))
-  t)
-
-;; table display
-(defun ascii-table-display (table &optional (out *standard-output*))
-  ;(when (atable-header table)
-  ;  (ascii-table-display-header table out))
-  (ascii-table-display-separator table out)
-  (ascii-table-display-row table (atable-cols table) out)
-  (ascii-table-display-separator table out)
-  (loop for row in (reverse (atable-rows table))
-        do
-        (ascii-table-display-row table row out))
-  (ascii-table-display-separator table out))
-
-(defun ascii-table-display-separator (table out)
-  (loop for len in (atable-cols-widths table)
+;; display helpers
+(defun display-separator (table out)
+  (loop for len in (cols-widths table)
         do (format out "+~a" (make-string len :initial-element #\-)))
   (format out "+~%"))
 
-(defun ascii-table-display-row (table row out)
+(defun display-row (table row out)
   (if row
       (progn
         (map nil (lambda (value len)
-                   (ascii-table-display-col value len out))
-             row (atable-cols-widths table))
+                   (display-col value len out))
+             row (cols-widths table))
         (format out "|~%"))
-    (ascii-table-display-separator table out)))
+    (display-separator table out)))
 
-(defun ascii-table-display-col (value len out)
+(defun display-col (value len out)
   (if (numberp value)
       (format out (format nil "|~~~a<~a~~> " (1- len) value))
     (format out (format nil "| ~~~a@<~a~~>" (1- len) value))))
@@ -73,9 +93,10 @@
 
 
 (defun test ()
-  (let ((table (make-ascii-table nil "Name" "Age")))
-    (ascii-table-add-row table "Bob" 42)
-    (ascii-table-add-row table "Bill" 12)
-    (ascii-table-add-separator table)
-    (ascii-table-add-row table "Jane" 23)
-    (ascii-table-display table t)))
+  (let ((table (make-table '("Name" "Age"))))
+    (format t "TABLE : ~a~%~%" table)
+    (add-row table '("Bob" 42))
+    (add-row table '("Bill" 12))
+    (add-separator table)
+    (add-row table '("Jane" 23))
+    (display table)))

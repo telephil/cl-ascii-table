@@ -1,11 +1,12 @@
 ;;;; package.lisp
 
-(defpackage #:cl-ascii-table
-  (:nicknames #:atable)
+(defpackage #:ascii-table
+  (:nicknames #:table)
   (:use #:cl)
   (:export
-     #:make-ascii-table
-     #:ascii-table-add-row
-     #:ascii-table-add-separator
-     #:ascii-table-display))
+     #:make-table
+     #:add-row
+     #:add-separator
+     #:display))
+
 
