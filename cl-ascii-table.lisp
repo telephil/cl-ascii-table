@@ -102,10 +102,10 @@
   (max len (+ 2 (length (format nil "~a" col)))))
 
 (defun string-pad (text len)
-  (format nil (format nil "~~~a<~a~~>" len text)))
+  (format nil "~v<~a~>" len text))
 
 (defun string-pad-right (text len)
-  (format nil (format nil "~~~a@<~a~~>" len text)))
+  (format nil "~v@<~a~>" len text))
 
 (defun test ()
   (let ((table (make-table '("Name  " "Age  ") :header "People")))
