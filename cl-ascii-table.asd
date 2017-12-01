@@ -1,9 +1,9 @@
 ;;;; cl-ascii-table.asd
 
 (asdf:defsystem #:cl-ascii-table
-  :description "Describe cl-ascii-table here"
-  :author "Your Name <your.name@example.com>"
-  :license "Specify license here"
+  :description "Common Lisp library to present tabular data in ascii-art table."
+  :author "Philippe MECHAI"
+  :license "MIT"
   :serial t
   :components ((:file "package")
                (:file "cl-ascii-table")))
