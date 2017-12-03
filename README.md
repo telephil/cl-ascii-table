@@ -5,7 +5,7 @@ Common Lisp library to present tabular data in ascii-art table.
 ### Installation
 1. Clone into a directory visible to quicklisp  
 ```
-git clone https://github.com/pmechai/cl-ascii-table
+git clone https://github.com/telephil/cl-ascii-table
 ```
 2. Load the library  
 ```
