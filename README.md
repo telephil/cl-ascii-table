@@ -45,7 +45,7 @@ Display the `table` to `out`.
 ### Sample
 ---
 ```lisp
-(let ((table (ascii-table:make-table '("Id" "Name" "Amount"))))
+(let ((table (ascii-table:make-table '("Id" "Name" "Amount") :header "Infos")))
   (ascii-table:add-row table '(1 "Bob" 150))
   (ascii-table:add-row table '(2 "Joe" 200))
   (ascii-table:add-separator table)
