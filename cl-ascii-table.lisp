@@ -2,6 +2,11 @@
 
 (in-package #:ascii-table)
 
+(defvar *default-value-formatter*
+  (lambda (value)
+    (format nil "~A"
+            value)))
+
 ;; model
 (defclass ascii-table ()
   ((header
@@ -22,6 +27,10 @@
     :initform nil)
    (rows
     :accessor rows
+    :initform nil)
+   (cols-formatters
+    :initarg :cols-formatters
+    :accessor cols-formatters
     :initform nil)))
 
 ;; interface
@@ -30,12 +39,21 @@
 (defgeneric display (ascii-table &optional out))
 
 ;; constructor
-(defun make-table (columns &key (header nil))
+(defun make-table (columns &key (header nil) formatters)
+  (when (> (length columns)
+           (length formatters))
+    (setf formatters
+          (append formatters
+                  (make-list (- (length columns)
+                                 (length formatters))
+                             :initial-element *default-value-formatter*))))
+  
   (make-instance 'ascii-table
                  :header header
                  :cols columns
                  :cols-count (length columns)
-                 :cols-widths (mapcar #'compute-col-width columns)))
+                 :cols-widths (mapcar #'compute-col-width columns)
+                 :cols-formatters formatters))
 
 ;; implementation
 (defmethod add-row ((table ascii-table) columns)
@@ -43,7 +61,10 @@
     (error "Invalid number of columns in row."))
   (setf (rows table) (cons columns (rows table)))
   (setf (cols-widths table)
-        (mapcar #'compute-col-width columns (cols-widths table)))
+        (mapcar #'compute-col-width
+                columns
+                (cols-widths table)
+                (cols-formatters table)))
   (values))
 
 (defmethod add-separator ((table ascii-table))
@@ -86,20 +107,24 @@
 (defun display-row (table row out)
   (if row
       (progn
-        (map nil (lambda (value len)
-                   (display-col value len out))
-             row (cols-widths table))
+        (map nil (lambda (value len formatter)
+                   (display-col value len out formatter))
+              row
+              (cols-widths table)
+              (cols-formatters table))
         (format out "|~%"))
-    (display-separator table out)))
+      (display-separator table out)))
 
-(defun display-col (value len out)
-  (if (numberp value)
-      (format out "|~a " (string-pad value (1- len)))
-    (format out "| ~a" (string-pad-right value (1- len)))))
+(defun display-col (value len out &optional (formatter *default-value-formatter*))
+  (let ((formatted-value (funcall formatter value)))
+    (if (numberp value)
+        (format out "|~a " (string-pad formatted-value (1- len)))
+        (format out "| ~a" (string-pad-right formatted-value (1- len))))))
 
 ;; utils                          
-(defun compute-col-width (col &optional (len 0))
-  (max len (+ 2 (length (format nil "~a" col)))))
+(defun compute-col-width (col &optional (len 0) (formatter *default-value-formatter*))
+  (let* ((formatted-value (funcall formatter col)))
+    (max len (+ 2 (length formatted-value)))))
 
 (defun string-pad (text len)
   (format nil "~v<~a~>" len text))

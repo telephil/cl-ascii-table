@@ -7,6 +7,7 @@
      #:make-table
      #:add-row
      #:add-separator
+     #:*default-value-formatter*
      #:display))
 
 
