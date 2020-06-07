@@ -50,7 +50,7 @@ Display the `table` to `out`.
   (ascii-table:add-row table '(2 "Joe" 200))
   (ascii-table:add-separator table)
   (ascii-table:add-row table '("" "Total" 350))
-  (ascii-table:display table)))
+  (ascii-table:display table))
 
 ; => outputs
 .---------------------.  
